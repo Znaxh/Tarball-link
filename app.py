@@ -8,27 +8,87 @@ st.set_page_config(
     layout="centered",
 )
 
-st.markdown(
-    """
-    <style>
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
+dark = st.toggle("🌙 Dark mode", value=st.session_state.dark_mode, key="dark_mode")
+
+LIGHT_CSS = """
+<style>
     .stApp {
         max-width: 720px;
         margin: 0 auto;
     }
-    .tar-url-box {
-        background: #f0f2f6;
-        border: 1px solid #d0d3da;
-        border-radius: 8px;
-        padding: 14px 18px;
-        font-family: monospace;
-        font-size: 14px;
-        word-break: break-all;
-        margin: 12px 0;
+</style>
+"""
+
+DARK_CSS = """
+<style>
+    .stApp {
+        max-width: 720px;
+        margin: 0 auto;
+        background-color: #0d1117;
+        color: #e6edf3;
     }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+    header[data-testid="stHeader"] {
+        background-color: #0d1117;
+    }
+    .stTextInput > div > div > input {
+        background-color: #161b22;
+        color: #e6edf3;
+        border-color: #30363d;
+    }
+    .stMarkdown, .stCaption, p, span, label, .stAlert p {
+        color: #e6edf3 !important;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: #e6edf3 !important;
+    }
+    .stCodeBlock {
+        background-color: #161b22 !important;
+    }
+    code {
+        color: #e6edf3 !important;
+        background-color: #161b22 !important;
+    }
+    pre {
+        background-color: #161b22 !important;
+    }
+    div[data-testid="stNotification"] {
+        background-color: #161b22;
+        border-color: #30363d;
+    }
+    .stButton > button {
+        background-color: #238636;
+        color: #ffffff;
+        border-color: #238636;
+    }
+    .stButton > button:hover {
+        background-color: #2ea043;
+        border-color: #2ea043;
+    }
+    .stLinkButton > a {
+        background-color: #238636 !important;
+        color: #ffffff !important;
+        border-color: #238636 !important;
+    }
+    .stLinkButton > a:hover {
+        background-color: #2ea043 !important;
+        border-color: #2ea043 !important;
+    }
+    div[data-testid="stForm"], div[data-testid="stVerticalBlock"] {
+        background-color: transparent;
+    }
+    footer {
+        color: #484f58 !important;
+    }
+    .stDeployButton {
+        color: #e6edf3 !important;
+    }
+</style>
+"""
+
+st.markdown(DARK_CSS if dark else LIGHT_CSS, unsafe_allow_html=True)
 
 PR_URL_PATTERN = re.compile(
     r"https?://github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+)/pull/(?P<number>\d+)"
@@ -64,20 +124,28 @@ if st.button("Get Tarball", type="primary", use_container_width=True):
     else:
         parsed = parse_pr_url(pr_url)
         if parsed is None:
-            st.error("Invalid GitHub PR URL. Expected format: `https://github.com/owner/repo/pull/123`")
+            st.error(
+                "Invalid GitHub PR URL. Expected format: "
+                "`https://github.com/owner/repo/pull/123`"
+            )
         else:
             owner, repo, pr_number = parsed
             with st.spinner("Fetching PR info from GitHub API..."):
                 try:
                     sha = fetch_base_sha(owner, repo, pr_number)
                 except requests.HTTPError as exc:
-                    st.error(f"GitHub API error: {exc.response.status_code} — {exc.response.reason}")
+                    st.error(
+                        f"GitHub API error: {exc.response.status_code} "
+                        f"— {exc.response.reason}"
+                    )
                     st.stop()
                 except Exception as exc:
                     st.error(f"Something went wrong: {exc}")
                     st.stop()
 
-            tarball_url = f"https://github.com/{owner}/{repo}/archive/{sha}.tar.gz"
+            tarball_url = (
+                f"https://github.com/{owner}/{repo}/archive/{sha}.tar.gz"
+            )
 
             st.success("Tarball link ready!")
 
